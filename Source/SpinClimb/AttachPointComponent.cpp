@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "AttachPointComponent.h"
 #include "Components/StaticMeshComponent.h"
 
@@ -32,6 +29,7 @@ UAttachPointComponent::UAttachPointComponent()
 	PhysicsConstraint->SetAngularSwing1Limit(EAngularConstraintMotion::ACM_Locked, 0);
 	PhysicsConstraint->SetAngularSwing2Limit(EAngularConstraintMotion::ACM_Locked,0);
 
+	nearAttachmentPoints.Init(nullptr,0);
 }
 
 
@@ -44,6 +42,7 @@ void UAttachPointComponent::BeginPlay()
 	
 }
 
+//add any nearAttachmentPoints that this object is now in range of
 void UAttachPointComponent::ObjectEntersRange(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	TArray<USceneComponent*> parents;
@@ -53,8 +52,8 @@ void UAttachPointComponent::ObjectEntersRange(UPrimitiveComponent* OverlappedCom
 		UAttachPointComponent* attachComponent = Cast<UAttachPointComponent>(parents[i]);
 		if (attachComponent != nullptr && attachComponent != this) {
 			if (canAttach() && attachComponent->canAttach()) {
-				attach(attachComponent, OverlappedComponent->GetAttachParentActor()->GetRootComponent(), OtherComp->GetAttachParentActor()->GetRootComponent(), true);
-
+				//attach(attachComponent, true);
+				nearAttachmentPoints.Add(attachComponent);
 				break;
 			}
 		}
@@ -62,8 +61,18 @@ void UAttachPointComponent::ObjectEntersRange(UPrimitiveComponent* OverlappedCom
 	
 }
 
+//Remove any attachment points from nearAttachmentPoints that this one has moved out of range of
 void UAttachPointComponent::ObjectExitsRange(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	TArray<USceneComponent*> parents;
+	OtherComp->GetParentComponents(parents);
+
+	for (int i = 0; i < parents.Num(); i++) {
+		UAttachPointComponent* attachComponent = Cast<UAttachPointComponent>(parents[i]);
+		if (attachComponent != nullptr && attachComponent != this) {
+				nearAttachmentPoints.Remove(attachComponent);
+		}
+	}
 }
 
 
@@ -75,22 +84,32 @@ void UAttachPointComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	// ...
 }
 
+//returns if this point is eligble to be attached to another point (isn't already attached)
 bool UAttachPointComponent::canAttach()
 {
 	return ConnectedAttachment == nullptr;
 }
 
-void UAttachPointComponent::attach(UAttachPointComponent* otherAttachmentPointComponent, USceneComponent* ownAttachedComp, USceneComponent* otherAttachedComp, bool isParent)
+//attaches 2 attachpointcomponents via physics constrains
+void UAttachPointComponent::attach(UAttachPointComponent* otherAttachmentPointComponent, bool isParent)
 {
-	if (Active && otherAttachmentPointComponent->Active) {
 		ConnectedAttachment = otherAttachmentPointComponent;
 		if (isParent) {
-			PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(ownAttachedComp), TEXT("None"), Cast<UPrimitiveComponent>(otherAttachedComp), TEXT("None"));
+			PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(this->GetAttachParentActor()->GetRootComponent()), TEXT("None"), Cast<UPrimitiveComponent>(otherAttachmentPointComponent->GetAttachParentActor()->GetRootComponent()), TEXT("None"));
 		}
-	}
-	
+		else { otherAttachmentPointComponent->attach(this, false); }
 }
 
+
+//Blueprint called for player to try to attach this component to its near one, will select the 1st in nearAttachmentPoints array is multiple are viable
+void UAttachPointComponent::attemptAttach()
+{
+	if (nearAttachmentPoints.Num() != 0) {
+		attach(nearAttachmentPoints[0], true);
+	}
+}
+
+//Blueprint called to detach the components
 void UAttachPointComponent::detach(bool isParent)
 {
 	if (ConnectedAttachment != nullptr) {

@@ -18,20 +18,24 @@ public:
 	// Sets default values for this component's properties
 	UAttachPointComponent();
 
+	//Visual indicator of attachment points
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* AttachmentMesh;
 
+	//collsion used to detect nearby attachment points
 	UPROPERTY(EditDefaultsOnly)
 	USphereComponent* ConnectionRadius;
 
+	//Physics constraint to connect points together
 	UPROPERTY(EditDefaultsOnly)
 	UPhysicsConstraintComponent* PhysicsConstraint;
 
+	//The attachment point this is currently connected to
 	UAttachPointComponent* ConnectedAttachment;
 
-	UPROPERTY(BlueprintReadWrite)
-	bool Active = true;
-
+private:
+	//Stores all attachment points currently in range
+	TArray<UAttachPointComponent*> nearAttachmentPoints;
 
 protected:
 	// Called when the game starts
@@ -50,10 +54,13 @@ public:
 
 	bool canAttach();
 
-	void attach(UAttachPointComponent* otherAttachmentPointComponent, USceneComponent* ownAttachedComp, USceneComponent* otherAttachedComp, bool isParent);
+	void attach(UAttachPointComponent* otherAttachmentPointComponent, bool isParent);
 
 	UFUNCTION(BlueprintCallable)
 	void bpDetach() { detach(true); }
+
+	UFUNCTION(BlueprintCallable)
+	void attemptAttach();
 
 	void detach(bool isParent);
 };
