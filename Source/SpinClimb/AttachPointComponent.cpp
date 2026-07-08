@@ -28,6 +28,7 @@ UAttachPointComponent::UAttachPointComponent()
 	PhysicsConstraint->SetAngularTwistLimit(EAngularConstraintMotion::ACM_Locked, 0);
 	PhysicsConstraint->SetAngularSwing1Limit(EAngularConstraintMotion::ACM_Locked, 0);
 	PhysicsConstraint->SetAngularSwing2Limit(EAngularConstraintMotion::ACM_Locked,0);
+	PhysicsConstraint->SetDisableCollision(true);
 
 	nearAttachmentPoints.Init(nullptr,0);
 }
@@ -93,8 +94,8 @@ void UAttachPointComponent::attach(UAttachPointComponent* otherAttachmentPointCo
 		ConnectedAttachment = otherAttachmentPointComponent;
 		if (isParent) {
 			PhysicsConstraint->SetConstrainedComponents(Cast<UPrimitiveComponent>(this->GetAttachParentActor()->GetRootComponent()), TEXT("None"), Cast<UPrimitiveComponent>(otherAttachmentPointComponent->GetAttachParentActor()->GetRootComponent()), TEXT("None"));
+			otherAttachmentPointComponent->attach(this, false);
 		}
-		else { otherAttachmentPointComponent->attach(this, false); }
 }
 
 
