@@ -60,7 +60,7 @@ public:
 	void bpDetach() { detach(true); }
 
 	UFUNCTION(BlueprintCallable)
-	void attemptAttach();
+	bool attemptAttach();
 
 	void detach(bool isParent);
 };

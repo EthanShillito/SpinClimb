@@ -51,11 +51,8 @@ void UAttachPointComponent::ObjectEntersRange(UPrimitiveComponent* OverlappedCom
 	for (int i = 0; i < parents.Num(); i++) {
 		UAttachPointComponent* attachComponent = Cast<UAttachPointComponent>(parents[i]);
 		if (attachComponent != nullptr && attachComponent != this) {
-			if (canAttach() && attachComponent->canAttach()) {
-				//attach(attachComponent, true);
-				nearAttachmentPoints.Add(attachComponent);
-				break;
-			}
+			nearAttachmentPoints.Add(attachComponent);
+			break;
 		}
 	}
 	
@@ -101,12 +98,17 @@ void UAttachPointComponent::attach(UAttachPointComponent* otherAttachmentPointCo
 }
 
 
-//Blueprint called for player to try to attach this component to its near one, will select the 1st in nearAttachmentPoints array is multiple are viable
-void UAttachPointComponent::attemptAttach()
+//Blueprint called for player to try to attach this component to its near one, will select the 1st in nearAttachmentPoints array is multiple are viable. Returns if attachment was successful
+bool UAttachPointComponent::attemptAttach()
 {
-	if (nearAttachmentPoints.Num() != 0) {
-		attach(nearAttachmentPoints[0], true);
+	if (!canAttach()) { return false; }
+	for (UAttachPointComponent* other : nearAttachmentPoints) {
+		if (other->canAttach()) {
+			attach(nearAttachmentPoints[0], true);
+			return true;
+		}
 	}
+	return false;
 }
 
 //Blueprint called to detach the components
